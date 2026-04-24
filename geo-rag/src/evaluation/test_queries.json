@@ -1,0 +1,17 @@
+[
+  {"query": "What is the population of Bern?",        "relevant": "Bern"},
+  {"query": "Tell me about Zurich",                   "relevant": "Zürich"},
+  {"query": "How high is the Matterhorn?",            "relevant": "Matterhorn"},
+  {"query": "What is the largest city in Switzerland?","relevant": "Zürich"},
+  {"query": "Tell me about Lake Geneva",              "relevant": "Lac Léman"},
+  {"query": "Where is Interlaken?",                   "relevant": "Interlaken"},
+  {"query": "What mountains are near Zermatt?",       "relevant": "Matterhorn"},
+  {"query": "Population of Basel",                    "relevant": "Basel"},
+  {"query": "Tell me about the Rhine river",          "relevant": "Rhine"},
+  {"query": "What canton is Lucerne in?",             "relevant": "Lucerne"},
+  {"query": "How high is Jungfrau?",                  "relevant": "Jungfrau"},
+  {"query": "Tell me about Lake Zurich",              "relevant": "Lake Zürich"},
+  {"query": "What is Graubünden?",                    "relevant": "Graubünden"},
+  {"query": "Elevation of Eiger",                     "relevant": "Eiger"},
+  {"query": "Tell me about Lausanne",                 "relevant": "Lausanne"}
+]
