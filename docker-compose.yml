@@ -1,0 +1,26 @@
+services:
+
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+
+  app:
+    build: .
+    depends_on:
+      - chromadb
+    volumes:
+      - ./data:/app/data
+      - ./src:/app/src
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    stdin_open: true
+    tty: true
+
+volumes:
+  chroma_data:
