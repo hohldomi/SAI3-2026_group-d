@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 def _call_ollama(messages: list[dict], model: str) -> str:
     import ollama
-    response = ollama.chat(
+    host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+    client = ollama.Client(host=host)
+    response = client.chat(
         model=model,
         messages=messages,
         options={'temperature': 0.1},
