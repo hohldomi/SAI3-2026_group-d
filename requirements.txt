@@ -1,0 +1,28 @@
+# Data processing
+pandas>=2.0
+numpy>=1.26
+
+# Embeddings
+sentence-transformers>=3.0
+torch>=2.0
+
+# Vector search
+chromadb>=0.5
+
+# Wikipedia enrichment
+wikipedia>=1.4
+
+# LLM
+ollama>=0.2
+
+# Utilities
+python-dotenv>=1.0
+tqdm>=4.66
+requests>=2.31
+
+# Evaluation
+scikit-learn>=1.4
+
+# Notebooks
+jupyter>=1.0
+ipykernel>=6.0
