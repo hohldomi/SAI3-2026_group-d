@@ -39,6 +39,8 @@ services:
     restart: "no"
 
   app:
+    ports:
+      - "8501:8501"
     build: .
     depends_on:
       chromadb:
