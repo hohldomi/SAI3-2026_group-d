@@ -6,8 +6,8 @@ import os
 import chromadb
 from dotenv import load_dotenv
 
-from src.retrieval.embed import embed_query
-from src.retrieval.index import load_index
+from retrieval.embed import embed_query
+from retrieval.index import load_index
 
 load_dotenv()
 

@@ -10,7 +10,7 @@ import os
 import requests
 import logging
 from dotenv import load_dotenv
-from src.generation.prompt import build_messages
+from generation.prompt import build_messages
 
 load_dotenv()
 logger = logging.getLogger(__name__)
