@@ -26,3 +26,6 @@ scikit-learn>=1.4
 # Notebooks
 jupyter>=1.0
 ipykernel>=6.0
+
+# Frontend
+streamlit>=1.35

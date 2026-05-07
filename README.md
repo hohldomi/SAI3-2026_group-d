@@ -63,34 +63,26 @@ SAI3-2026_group-d/
 
 ---
 
-## Quickstart
+## Getting started
 
-### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed
-- Python 3.11+
-- Git
+Everything runs inside Docker — you don't need to install Python or any libraries manually. The only two requirement are **Docker Desktop** and Git.
 
-### 1. Clone the repository
+### What you need before you start
 
-```bash
-git clone https://github.com/hohldomi/SAI3-2026_group-d.git
-cd SAI3-2026_group-d
-```
+1. **Docker Desktop** — download and install from [docker.com](https://www.docker.com/products/docker-desktop/)
+    1. Open Terminal or Command Prompt and run:
+    ```bash
+    docker --version
+    ```
+    2. Run following command to see if docker can pull and run containers correctly:
+    ```bash
+    docker run hello-world
+    ```
+2. **The GeoNames data file** — a publicly available database of Swiss place names
 
-### 2. Install dependencies
+### Step 1 — Download the GeoNames data
 
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configure environment
-
-```bash
-cp .env.example .env
-# Edit .env as needed
-```
-
-### 4. Download GeoNames data
+This file contains the raw geographic data (cities, mountains, lakes, etc.) that the assistant learns from.
 
 **Windows (PowerShell):**
 ```powershell
@@ -98,104 +90,95 @@ Invoke-WebRequest -Uri "https://download.geonames.org/export/dump/CH.zip" -OutFi
 Expand-Archive -Path "CH.zip" -DestinationPath "data/raw/"
 ```
 
-**Mac/Linux:**
+**Mac / Linux:**
 ```bash
 curl -O https://download.geonames.org/export/dump/CH.zip
 unzip CH.zip -d data/raw/
 ```
 
-### 5. Start ChromaDB
+### Step 2 — Get the project
 
 ```bash
-docker compose up chromadb -d
+git clone https://github.com/hohldomi/SAI3-2026_group-d.git
+cd SAI3-2026_group-d
 ```
 
-### 6. Build the corpus
+### Step 3 — Start all services
 
-```bash
-python -m src.pipeline.build_corpus
-# Output: data/processed/corpus.jsonl (~10–15 MB)
-# Note: Wikipedia enrichment runs in parallel (8 threads) — takes ~15–30 min
-```
-
-### 7. Build the vector index
-
-```bash
-python -m src.retrieval.index
-# Embeds and loads 29,000+ passages into ChromaDB (~12 min on CPU)
-```
-
-### 8. Run the chatbot
-
-```bash
-python main.py
-```
-
-**Single query with passage display:**
-```bash
-python main.py --query "What canton is Lyss in?" --verbose
-```
-
----
-
-## Running with Docker (fully containerized)
+This single command starts everything: the database, the AI model, and the web interface.
 
 ```bash
 docker compose up
 ```
 
-This starts ChromaDB and Ollama automatically. On first startup, `llama3.2` (~2 GB) is downloaded and cached in a persistent Docker volume — no manual `ollama pull` needed.
+> On first start, the AI model (`llama3.2`, ~2 GB) is downloaded automatically. This happens only once — afterwards it is stored locally.
 
-> **Note:** Steps 6 and 7 (corpus building and indexing) must be run locally before starting Docker, as they require the GeoNames file and write to `data/processed/`.
+### Step 4 — Build the knowledge base (first time only)
+
+Before the assistant can answer questions, it needs to process and index all the geographic data. Open a second terminal and run these two commands — **you only need to do this once**:
+
+```bash
+# Builds readable text passages from the raw data (~15–30 minutes)
+docker compose run --rm app python -m pipeline.build_corpus
+
+# Loads all passages into the search database (~12 minutes)
+docker compose run --rm app python -m retrieval.index
+```
+
+After this, the knowledge base is saved permanently — you won't need to repeat these steps unless the data changes.
+
+### Step 5 — Open the assistant
+
+Once everything is running, open your browser and go to:
+
+**http://localhost:8501**
+
+You'll see the GeoRAG web interface where you can type your questions.
 
 ---
 
-## Interactive mode
+## Using the assistant
 
-```
-GeoRAG — Switzerland Geography Assistant
-Type 'quit' to exit, 'verbose' to toggle passage display.
+Type your question in plain English (or German) and press Enter. The assistant will search through its knowledge base and generate an answer.
 
-You: What canton is Lyss in?
-Assistant: Lyss is located in the canton of Bern.
+**Example questions:**
+- *"What is the population of Bern?"*
+- *"Tell me about Zermatt"*
+- *"What canton is Lyss in?"*
+- *"Explain the significance of the Matterhorn"*
 
-You: verbose
-Verbose mode: on
-
-You: What is the Matterhorn?
---- Retrieved passages ---
-  [0.961] Matterhorn: Matterhorn is a mountain straddling the border between Switzerland and Italy...
-  ...
-Assistant: The Matterhorn is one of Switzerland's most iconic peaks, rising 4,478 metres...
-```
+Under each answer you can expand the **Sources** section to see exactly which passages the assistant used to form its response.
 
 ---
 
 ## Configuration
 
-Copy `.env.example` to `.env`:
+Settings are managed through a `.env` file. Copy the example file to get started:
 
-```env
-# LLM
-OLLAMA_MODEL=llama3.2
-OLLAMA_HOST=http://localhost:11434   # use http://ollama:11434 inside Docker
-
-# Embeddings
-EMBEDDING_MODEL=intfloat/multilingual-e5-small
-
-# Retrieval
-TOP_K=5
-MIN_SCORE=0.35
-
-# ChromaDB
-CHROMA_HOST=localhost                # use chromadb inside Docker
-CHROMA_PORT=8000
-COLLECTION_NAME=switzerland_geo
-
-# Paths
-GEONAMES_PATH=data/raw/CH.txt
-CORPUS_PATH=data/processed/corpus.jsonl
+```bash
+cp .env.example .env
 ```
+
+The most relevant settings:
+
+| Setting | Default | What it controls |
+|---------|---------|-----------------|
+| `OLLAMA_MODEL` | `llama3.2` | Which AI model generates the answers |
+| `TOP_K` | `5` | How many passages are retrieved per query |
+| `MIN_SCORE` | `0.35` | Minimum relevance score — lower means more (but less relevant) results |
+| `COLLECTION_NAME` | `switzerland_geo` | Name of the knowledge base in the database |
+
+---
+
+## How it works
+
+GeoRAG uses a technique called **Retrieval-Augmented Generation (RAG)**:
+
+1. **Your question** is converted into a mathematical representation (an "embedding")
+2. **The search database** (ChromaDB) finds the most relevant geographic passages using this representation
+3. **The AI model** (Ollama/llama3.2) reads those passages and writes a grounded answer
+
+This means the assistant only answers based on real data — it doesn't invent facts.
 
 ---
 
@@ -207,19 +190,6 @@ CORPUS_PATH=data/processed/corpus.jsonl
 | Wikipedia (via `wikipedia` Python package) | CC BY-SA 4.0 | ~7–10 MB summaries |
 
 Both sources are freely usable for academic projects.
-
----
-
-## Tech stack
-
-| Component | Technology |
-|-----------|-----------|
-| Embeddings | [sentence-transformers](https://www.sbert.net/) (`intfloat/multilingual-e5-small`) |
-| Vector store | [ChromaDB](https://www.trychroma.com/) |
-| LLM inference | [Ollama](https://ollama.com/) (`llama3.2`) |
-| Data processing | Pandas, NumPy |
-| Containerization | Docker Compose |
-| Experimentation | Jupyter |
 
 ---
 

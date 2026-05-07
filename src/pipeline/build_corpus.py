@@ -11,8 +11,8 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-from src.pipeline.geonames import load_geonames, build_passages
-from src.pipeline.wikipedia import enrich_dataframe, merge_passages
+from pipeline.geonames import load_geonames, build_passages
+from pipeline.wikipedia import enrich_dataframe, merge_passages
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')

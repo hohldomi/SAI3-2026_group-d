@@ -11,8 +11,7 @@ from pathlib import Path
 import chromadb
 from dotenv import load_dotenv
 
-from src.retrieval.embed import embed_passages
-
+from retrieval.embed import embed_passages
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
