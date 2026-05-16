@@ -119,10 +119,10 @@ Before the assistant can answer questions, it needs to process and index all the
 
 ```bash
 # Builds readable text passages from the raw data (~15–30 minutes)
-docker compose run --rm app python -m pipeline.build_corpus
+docker compose run --rm -e PYTHONPATH=/app/src app python -m pipeline.build_corpus
 
 # Loads all passages into the search database (~12 minutes)
-docker compose run --rm app python -m retrieval.index
+docker compose run --rm -e PYTHONPATH=/app/src app python -m retrieval.index
 ```
 
 After this, the knowledge base is saved permanently — you won't need to repeat these steps unless the data changes.

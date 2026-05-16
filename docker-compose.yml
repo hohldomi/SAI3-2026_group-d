@@ -54,6 +54,7 @@ services:
       - CHROMA_HOST=chromadb
       - CHROMA_PORT=8000
       - OLLAMA_HOST=http://ollama:11434
+      - PYTHONPATH=/app/src
     stdin_open: true
     tty: true
 
