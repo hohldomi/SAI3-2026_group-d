@@ -22,7 +22,7 @@ MAX_WORKERS = 8
 
 
 def fetch_summary(name: str, country: str = "Switzerland",
-                  n_sentences: int = 3) -> str | None:
+                  n_sentences: int = 5) -> str | None:
     """Fetch first n_sentences from a Wikipedia article."""
     try:
         results = wikipedia.search(f"{name} {country}", results=3)
@@ -43,9 +43,9 @@ def fetch_summary(name: str, country: str = "Switzerland",
 
 
 def is_significant(row: pd.Series) -> bool:
-    if row['feature_class'] == 'P' and row['population'] > 2000:  # war 500
+    if row['feature_class'] == 'P' and row['population'] > 500:  # war 500
         return True
-    if row['feature_class'] == 'T' and pd.notna(row['elevation']) and row['elevation'] > 2000:  # war 1000
+    if row['feature_class'] == 'T' and pd.notna(row['elevation']) and row['elevation'] > 2500:  # war 1000
         return True
     if row['feature_class'] in ('H', 'A'):  # 'L' entfernt
         return True

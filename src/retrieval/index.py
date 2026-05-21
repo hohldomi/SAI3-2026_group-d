@@ -51,7 +51,7 @@ def build_index(passages: list[dict], collection: chromadb.Collection,
         batch_emb = embeddings[start:start + batch_size]
 
         collection.upsert(
-            ids=[str(p['geonameid']) for p in batch],
+            ids=[str(p['id']) for p in batch],
             embeddings=batch_emb.tolist(),
             documents=[p['passage'] for p in batch],
             metadatas=[{
