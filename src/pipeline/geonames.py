@@ -28,8 +28,18 @@ def load_geonames(path: str) -> pd.DataFrame:
     df = pd.read_csv(path, sep='\t', names=GEONAMES_COLS,
                      low_memory=False, na_values='')
     df = df[df['feature_class'].isin(RELEVANT_CLASSES)].copy()
+
+    # Numeric cleanup
     df['population'] = df['population'].fillna(0).astype(int)
     df['elevation'] = pd.to_numeric(df['elevation'], errors='coerce')
+
+    # Downcast int64 → int32 and float64 → float32 to save memory
+    df['population'] = df['population'].astype('int32')
+    df['elevation']  = df['elevation'].astype('float32')
+    df['latitude']   = df['latitude'].astype('float32')
+    df['longitude']  = df['longitude'].astype('float32')
+    df['dem']        = pd.to_numeric(df['dem'], errors='coerce').astype('float32')
+
     return df
 
 
