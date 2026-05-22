@@ -22,6 +22,9 @@ build/
 data/raw/
 data/processed/
 
+# Wiki cache — large and regeneratable via build_corpus
+data/raw/wiki_cache.json
+
 # Vector index files
 *.faiss
 *.pkl
