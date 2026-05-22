@@ -18,7 +18,7 @@ Built as a group project for the course **Building AI Applications (SAI3)** at B
 - *"What is the population of Bern?"*
 - *"Tell me about Zermatt"*
 - *"What canton is Lyss in?"*
-- *"Explain the significance of the Matterhorn"*
+- *"How high is the Matterhorn?"*
 
 ---
 
@@ -27,12 +27,13 @@ Built as a group project for the course **Building AI Applications (SAI3)** at B
 ```
 SAI3-2026_group-d/
 ├── data/
-│   ├── raw/               # CH.txt (GeoNames)
-│   └── processed/         # corpus.jsonl — final text chunks
+│   ├── raw/               # CH.txt (GeoNames, git-ignored)
+│   ├── processed/         # corpus.jsonl — final text chunks (git-ignored)
+│   └── evaluation/        # Evaluation results (JSON, CSV, Markdown)
 ├── src/
 │   ├── pipeline/
-│   │   ├── geonames.py    # GeoNames → text passages
-│   │   ├── wikipedia.py   # Wikipedia enrichment (parallel, 8 threads)
+│   │   ├── geonames.py    # GeoNames → text passages (canton mapping, feature codes)
+│   │   ├── wikipedia.py   # Wikipedia enrichment (REST API, Token Bucket, 4 workers)
 │   │   ├── chunker.py     # Recursive chunking of passages
 │   │   └── build_corpus.py
 │   ├── retrieval/
@@ -43,8 +44,9 @@ SAI3-2026_group-d/
 │   │   ├── prompt.py      # Prompt templates
 │   │   └── llm.py         # LLM interface (Ollama)
 │   └── evaluation/
-│       ├── metrics.py     # Recall@k, MRR, faithfulness
-│       └── test_queries.json
+│       ├── metrics.py     # Recall@k, MRR
+│       ├── run_evaluation.py  # Full evaluation pipeline → saves results to data/evaluation/
+│       └── test_queries.json  # 20 test queries with expected results
 ├── notebooks/
 │   ├── 01_data_exploration.ipynb
 │   ├── 02_embedding_experiments.ipynb
@@ -54,7 +56,7 @@ SAI3-2026_group-d/
 ├── docs/
 │   └── architecture.md
 ├── main.py                # CLI entry point
-├── docker-compose.yml     # ChromaDB + Ollama services
+├── docker-compose.yml     # ChromaDB + Ollama + App services
 ├── Dockerfile
 ├── requirements.txt
 ├── .env.example
@@ -64,26 +66,22 @@ SAI3-2026_group-d/
 
 ---
 
-## Getting started
+## Getting started (first time)
 
-Everything runs inside Docker — you don't need to install Python or any libraries manually. The only two requirements are **Docker Desktop** and Git.
+Everything runs inside Docker — you don't need to install Python or any libraries manually.  
+Requirements: **Docker Desktop** and **Git**.
 
-### What you need before you start
+### Step 1 — Clone the repository
 
-1. **Docker Desktop** — download and install from [docker.com](https://www.docker.com/products/docker-desktop/)
-    1. Open Terminal or Command Prompt and run:
-    ```bash
-    docker --version
-    ```
-    2. Run the following command to see if Docker can pull and run containers correctly:
-    ```bash
-    docker run hello-world
-    ```
-2. **The GeoNames data file** — a publicly available database of Swiss place names
+```powershell
+git clone https://github.com/hohldomi/SAI3-2026_group-d.git
+cd SAI3-2026_group-d
+```
 
-### Step 1 — Download the GeoNames data
+### Step 2 — Download the GeoNames data
 
-This file contains the raw geographic data (cities, mountains, lakes, etc.) that the assistant learns from.
+This file contains the raw geographic data (cities, mountains, lakes, etc.) that the assistant learns from.  
+It is not included in the repository because of its size.
 
 **Windows (PowerShell):**
 ```powershell
@@ -97,112 +95,120 @@ curl -O https://download.geonames.org/export/dump/CH.zip
 unzip CH.zip -d data/raw/
 ```
 
-### Step 2 — Get the project
-
-```bash
-git clone https://github.com/hohldomi/SAI3-2026_group-d.git
-cd SAI3-2026_group-d
-```
-
 ### Step 3 — Start all services
 
-This single command starts everything: the database, the AI model, and the web interface.
-
-```bash
-docker compose up
+```powershell
+docker compose up -d
 ```
 
-> On first start, the AI model (`llama3.2`, ~2 GB) is downloaded automatically. This happens only once — afterwards it is stored locally.
+> On first start, the AI model (`llama3.2`, ~2 GB) is downloaded automatically. This happens only once.
 
-### Step 4 — Build the knowledge base (first time only)
+### Step 4 — Build the knowledge base
 
-Before the assistant can answer questions, it needs to process and index all the geographic data. Open a second terminal and run these two commands — **you only need to do this once**:
+Before the assistant can answer questions, it needs to process and index all geographic data.  
+Run these two commands — **you only need to do this once per fresh setup**:
 
-```bash
-# Builds and chunks text passages from the raw data (~30–45 minutes)
-docker compose run --rm -e PYTHONPATH=/app/src app python -m pipeline.build_corpus
+```powershell
+# Build and chunk text passages from raw data (~45 min first time, ~3 min with cache)
+docker compose run --rm app python -m pipeline.build_corpus
 
-# Loads all chunks into the search database (~15 minutes)
-docker compose run --rm -e PYTHONPATH=/app/src app python -m retrieval.index
+# Embed all chunks and load into ChromaDB (~8 min)
+docker compose run --rm app python -m retrieval.index
 ```
 
-> **Note:** The corpus build fetches Wikipedia summaries for ~11,000 significant places (cities with population > 500, mountains above 2500 m, lakes, and cantons) using 8 parallel threads. Build time depends on your internet connection.
-
-After this, the knowledge base is saved permanently — you won't need to repeat these steps unless the data changes.
-
-> **After `docker compose down`:** ChromaDB data is not persisted between restarts. Run both commands above again after each restart.
+> **Wikipedia enrichment:** The corpus build fetches up to 12-sentence summaries from Wikipedia for ~13,000 significant Swiss places (cities > 500 inhabitants, mountains > 1500 m, lakes, rivers, cantons, regions). Results are cached in `data/raw/wiki_cache.json` — subsequent builds skip all Wikipedia requests and finish in ~3 minutes.
 
 ### Step 5 — Open the assistant
 
-Once everything is running, open your browser and go to:
-
 **http://localhost:8501**
 
-You'll see the GeoRAG web interface where you can type your questions.
-
 ---
 
-## Using the assistant
+## After every restart
 
-Type your question in plain English (or German) and press Enter. The assistant will search through its knowledge base and generate an answer.
+ChromaDB does not persist data between `docker compose down` restarts.  
+After each restart, run the following commands before using the app:
 
-**Example questions:**
-- *"What is the population of Bern?"*
-- *"Tell me about Zermatt"*
-- *"What canton is Lyss in?"*
-- *"Explain the significance of the Matterhorn"*
+```powershell
+# 1. Start services
+docker compose up -d
 
-Under each answer you can expand the **Sources** section to see exactly which passages the assistant used to form its response.
+# 2. Rebuild corpus (~3 min — served from wiki cache, no internet needed)
+docker compose run --rm app python -m pipeline.build_corpus
 
----
+# 3. Rebuild index (~8 min)
+docker compose run --rm app python -m retrieval.index
 
-## Configuration
-
-Settings are managed through a `.env` file. Copy the example file to get started:
-
-```bash
-cp .env.example .env
+# 4. Open browser
+# http://localhost:8501
 ```
 
-The most relevant settings:
+---
 
-| Setting | Default | What it controls |
-|---------|---------|-----------------|
-| `OLLAMA_MODEL` | `llama3.2` | Which AI model generates the answers |
-| `TOP_K` | `5` | How many chunks are retrieved per query |
-| `MIN_SCORE` | `0.35` | Minimum relevance score — lower means more (but less relevant) results |
-| `COLLECTION_NAME` | `switzerland_geo` | Name of the knowledge base in the database |
+## Evaluation
+
+Run the full evaluation pipeline after building corpus and index:
+
+```powershell
+docker compose run --rm app python -m evaluation.run_evaluation
+```
+
+Results are saved to `data/evaluation/`:
+- `results.json` — all metrics in machine-readable form
+- `results_report.md` — human-readable summary (Recall@k, MRR, per-query table)
+- `per_query.csv` — per-query breakdown for Excel/Presentation
+
+**Current results (corpus v1, 36,270 passages, 9.96 MB):**
+
+| Metric | Score |
+|--------|-------|
+| Recall@1 | 0.750 |
+| Recall@3 | 0.750 |
+| Recall@5 | **0.800** |
+| MRR | **0.762** |
+| Queries evaluated | 20 |
 
 ---
 
 ## How it works
 
-GeoRAG uses a technique called **Retrieval-Augmented Generation (RAG)**:
+GeoRAG uses **Retrieval-Augmented Generation (RAG)**:
 
-1. **Your question** is converted into a mathematical representation (an "embedding")
-2. **The search database** (ChromaDB) finds the most relevant geographic chunks using this representation
-3. **The AI model** (Ollama/llama3.2) reads those chunks and writes a grounded answer
-
-This means the assistant only answers based on real data — it doesn't invent facts.
+1. **Your question** is converted into a vector embedding
+2. **ChromaDB** finds the most relevant geographic chunks using cosine similarity
+3. **Ollama/llama3.2** reads those chunks and generates a grounded answer
 
 ### Corpus pipeline
 
-The knowledge base is built in three stages:
+1. **GeoNames ingestion** — each row from `CH.txt` is converted into a rich text passage including canton, elevation, population, alternate names, and timezone
+2. **Wikipedia enrichment** — for significant places, up to 12 sentences are fetched from Wikipedia via REST API and appended. A global Token Bucket (2 req/s) prevents rate limiting. Results are cached locally.
+3. **Recursive chunking** — long passages are split into overlapping chunks (~400 chars, 80-char overlap)
 
-1. **GeoNames ingestion** — each row from `CH.txt` is converted into a readable text passage (e.g. *"Bern is a populated place in Switzerland with a population of 133,000..."*)
-2. **Wikipedia enrichment** — for significant places (cities > 500 inhabitants, mountains > 2500 m, all lakes and cantons), up to 5 sentences are fetched from Wikipedia and appended to the passage
-3. **Recursive chunking** — long passages are split into overlapping chunks of ~400 characters with 80-character overlap, so the retrieval system can pinpoint specific facts rather than retrieving entire articles
+---
+
+## Configuration
+
+Copy `.env.example` to `.env`:
+
+```powershell
+copy .env.example .env
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `OLLAMA_MODEL` | `llama3.2` | LLM for answer generation |
+| `TOP_K` | `5` | Number of passages retrieved per query |
+| `MIN_SCORE` | `0.35` | Minimum cosine similarity threshold |
+| `COLLECTION_NAME` | `switzerland_geo` | ChromaDB collection name |
 
 ---
 
 ## Data sources
 
-| Source | License | Size |
-|--------|---------|------|
-| [GeoNames CH](https://download.geonames.org/export/dump/) | CC BY 4.0 | ~5 MB raw |
-| Wikipedia (via `wikipedia` Python package) | CC BY-SA 4.0 | ~7–10 MB summaries |
-
-Both sources are freely usable for academic projects.
+| Source | License | Description |
+|--------|---------|-------------|
+| [GeoNames CH](https://download.geonames.org/export/dump/) | CC BY 4.0 | Swiss place names database |
+| Wikipedia (REST API) | CC BY-SA 4.0 | Geographic summaries, up to 12 sentences |
 
 ---
 
