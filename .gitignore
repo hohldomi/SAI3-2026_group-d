@@ -25,6 +25,9 @@ data/processed/
 # Wiki cache — large and regeneratable via build_corpus
 data/raw/wiki_cache.json
 
+# Raw data archives
+CH.zip
+
 # Vector index files
 *.faiss
 *.pkl
@@ -33,6 +36,9 @@ data/raw/wiki_cache.json
 .cache/
 models/
 sentence_transformers_cache/
+
+# Evaluation outputs — generated, not committed
+data/evaluation/
 
 # OS
 .DS_Store
