@@ -63,7 +63,6 @@ SAI3-2026_group-d/
 ├── .gitignore
 └── README.md
 ```
-
 ---
 
 ## Getting started (first time)
@@ -124,24 +123,27 @@ docker compose run --rm app python -m retrieval.index
 
 ---
 
-## After every restart
+## After a restart
 
-ChromaDB does not persist data between `docker compose down` restarts.  
-After each restart, run the following commands before using the app:
+ChromaDB persists its data in a Docker named volume (`chroma_data`) and the corpus is stored as a local file (`data/processed/corpus.jsonl`). **Neither needs to be rebuilt after a normal restart.**
 
 ```powershell
-# 1. Start services
+# Stop
+docker compose down
+
+# Start again — corpus and index are still intact
 docker compose up -d
 
-# 2. Rebuild corpus (~3 min — served from wiki cache, no internet needed)
-docker compose run --rm app python -m pipeline.build_corpus
-
-# 3. Rebuild index (~8 min)
-docker compose run --rm app python -m retrieval.index
-
-# 4. Open browser
+# Open browser
 # http://localhost:8501
 ```
+
+> **Full reset:** If you used `docker compose down -v`, the `chroma_data` volume is deleted and the index must be rebuilt. The corpus file is unaffected and does not need to be rebuilt.
+>
+> ```powershell
+> docker compose up -d
+> docker compose run --rm app python -m retrieval.index   # ~8 min
+> ```
 
 ---
 
