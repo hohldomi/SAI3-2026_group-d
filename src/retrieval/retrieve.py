@@ -37,8 +37,6 @@ def retrieve(query: str,
              min_score: float = None) -> list[dict]:
     """
     Embed query, search ChromaDB collection, return top-k results.
-    Signature change from FAISS version: takes a ChromaDB collection
-    instead of (index, passages).
     """
     k = k or int(os.getenv('TOP_K', 5))
     min_score = min_score or float(os.getenv('MIN_SCORE', 0.30))

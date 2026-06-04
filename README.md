@@ -118,7 +118,7 @@ docker compose run --rm app python -m pipeline.build_corpus
 docker compose run --rm app python -m retrieval.index
 ```
 
-> **Wikipedia enrichment:** The corpus build fetches up to 12-sentence summaries from Wikipedia for ~13,000 significant Swiss places (cities > 500 inhabitants, mountains > 1500 m, lakes, rivers, cantons, regions). Results are cached in `data/raw/wiki_cache.json` — subsequent builds skip all Wikipedia requests and finish in ~3 minutes.
+> **Wikipedia enrichment:** The corpus build fetches up to 12-sentence summaries from Wikipedia for ~13,000 significant Swiss places (cities > 500 inhabitants, mountains > 1500 m, lakes, rivers, cantons, regions). Results are cached in `data/raw/wiki_cache.json` — subsequent builds skip all Wikipedia requests and finish in >1 minute.
 
 ### Step 6 — Open the assistant
 
