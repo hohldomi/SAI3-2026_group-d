@@ -29,7 +29,7 @@ if isinstance(collection, Exception):
     )
     st.stop()
 
-query = st.text_input("Your question", placeholder="e.g. What is the highest mountain in Switzerland?")
+query = st.text_input("Your question", placeholder="e.g. How high is the Dufourspitze")
 
 if query:
     with st.spinner("Searching relevant passages..."):

@@ -4,7 +4,6 @@ A Retrieval-Augmented Generation (RAG) chatbot that answers questions about Swis
 Built as a group project for the course **Building AI Applications (SAI3)** at Bern University of Applied Sciences.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
@@ -33,7 +32,7 @@ SAI3-2026_group-d/
 ├── src/
 │   ├── pipeline/
 │   │   ├── geonames.py    # GeoNames → text passages (canton mapping, feature codes)
-│   │   ├── wikipedia.py   # Wikipedia enrichment (REST API, Token Bucket, 4 workers)
+│   │   ├── wikipedia.py   # Wikipedia enrichment (REST API, Token Bucket, 2 workers)
 │   │   ├── chunker.py     # Recursive chunking of passages
 │   │   └── build_corpus.py
 │   ├── retrieval/
@@ -47,21 +46,14 @@ SAI3-2026_group-d/
 │       ├── metrics.py     # Recall@k, MRR
 │       ├── run_evaluation.py  # Full evaluation pipeline → saves results to data/evaluation/
 │       └── test_queries.json  # 20 test queries with expected results
-├── notebooks/
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_embedding_experiments.ipynb
-│   └── 03_retrieval_evaluation.ipynb
-├── tests/
-│   └── test_pipeline.py
 ├── docs/
 │   └── architecture.md
-├── main.py                # CLI entry point
-├── docker-compose.yml     # ChromaDB + Ollama + App services
-├── Dockerfile
-├── requirements.txt
 ├── .env.example
 ├── .gitignore
-└── README.md
+├── docker-compose.yml     # ChromaDB + Ollama + App services
+├── Dockerfile
+├── README.md
+└── requirements.txt
 ```
 ---
 
@@ -94,7 +86,18 @@ curl -O https://download.geonames.org/export/dump/CH.zip
 unzip CH.zip -d data/raw/
 ```
 
-### Step 3 — Start all services
+### Step 3 — Download the Wikipedia cache (optional, recommended for a faster build)
+
+A pre-built cache of all 13'058 Wikipedia summaries is available as a 
+release asset, skipping the ~1h 40min enrichment step:
+
+1. Download `wiki_cache.json` from the [latest release](https://github.com/hohldomi/SAI3-2026_group-d/releases/latest)
+2. Place it at `data/raw/wiki_cache.json`
+
+Without the cache, `build_corpus` fetches all summaries from scratch 
+(~1h 40min min, requires internet access).
+
+### Step 4 — Start all services
 
 ```powershell
 docker compose up -d
@@ -102,13 +105,13 @@ docker compose up -d
 
 > On first start, the AI model (`llama3.2`, ~2 GB) is downloaded automatically. This happens only once.
 
-### Step 4 — Build the knowledge base
+### Step 5 — Build the knowledge base
 
 Before the assistant can answer questions, it needs to process and index all geographic data.  
 Run these two commands — **you only need to do this once per fresh setup**:
 
 ```powershell
-# Build and chunk text passages from raw data (~45 min first time, ~3 min with cache)
+# Build and chunk text passages from raw data (~1h 40min first time, >1min with cache)
 docker compose run --rm app python -m pipeline.build_corpus
 
 # Embed all chunks and load into ChromaDB (~8 min)
@@ -117,7 +120,7 @@ docker compose run --rm app python -m retrieval.index
 
 > **Wikipedia enrichment:** The corpus build fetches up to 12-sentence summaries from Wikipedia for ~13,000 significant Swiss places (cities > 500 inhabitants, mountains > 1500 m, lakes, rivers, cantons, regions). Results are cached in `data/raw/wiki_cache.json` — subsequent builds skip all Wikipedia requests and finish in ~3 minutes.
 
-### Step 5 — Open the assistant
+### Step 6 — Open the assistant
 
 **http://localhost:8501**
 
@@ -218,9 +221,19 @@ copy .env.example .env
 
 | Name | Role |
 |------|------|
-| Person A | Data pipeline + embeddings |
-| Person B | Retrieval + evaluation |
-| Person C | LLM integration + UI |
+| Dominik Hohl | Data pipeline, Wikipedia enrichment, embeddings, retrieval & evaluation |
+| Brad Bustillos | LLM integration, user interface & report |
+| Micha Streit | Local testing & quality assurance |
+
+---
+
+## AI assistance
+
+This project was developed with the support of Claude (Anthropic) as an 
+AI coding assistant. AI-generated code and text were not adopted 
+uncritically — all suggestions were reviewed, tested, and adapted by the 
+team. This applies to code, documentation, and commit messages throughout 
+the repository.
 
 ---
 
