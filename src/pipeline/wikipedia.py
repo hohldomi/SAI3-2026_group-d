@@ -20,8 +20,10 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 logger = logging.getLogger(__name__)
 
-MAX_WORKERS  = 4
-GLOBAL_RPS   = 2.0   # max requests per second globally — stays safely under Wikipedia's limit
+MAX_WORKERS  = 2   # increasing this reduces build time but significantly raises the risk
+                   # of Wikipedia's IP-level rate limiting (429 errors with 17–27s delays),
+                   # which can outweigh the parallelism gain — 2 workers is the safe default
+GLOBAL_RPS   = 2.0 # max requests per second globally — stays safely under Wikipedia's limit
 CACHE_PATH   = Path("data/raw/wiki_cache.json")
 
 HEADERS = {
