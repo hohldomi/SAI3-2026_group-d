@@ -29,51 +29,54 @@ HEADERS = {
     "Accept":     "application/json",
 }
 
-SEARCH_URL  = "https://en.wikipedia.org/w/api.php"
-SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/{}"
+SEARCH_URL  = "https://de.wikipedia.org/w/api.php"
+SUMMARY_URL = "https://de.wikipedia.org/api/rest_v1/page/summary/{}"
 
 SWISS_KEYWORDS = {
-    # Landesbezeichnungen
-    "switzerland", "swiss", "schweiz", "suisse", "svizzera", "helvetia",
-    # Kantone EN/DE/FR/IT
-    "canton", "kanton",
+    # Landesbezeichnungen — DE primär, FR/IT als offizielle Alternativnamen
+    "schweiz", "schweizer", "schweizerisch",
+    "suisse", "svizzera", "helvetia",
+    # Kantone — DE/FR/IT (im DE-Artikel als Alternativnamen zitiert)
+    "kanton",
     "graubünden", "grisons", "grigioni",
-    "valais", "wallis",
-    "ticino", "tessin",
+    "wallis", "valais",
+    "tessin", "ticino",
     "bern", "berne",
-    "zurich", "zürich",
-    "geneva", "genève", "genf",
+    "zürich",
+    "genf", "genève",
     "basel",
-    "lucerne", "luzern",
+    "luzern",
     "appenzell",
-    "glarus", "glaris",
-    "thurgau", "thurgovie",
-    "aargau", "argovie",
-    "solothurn", "soleure",
-    "fribourg", "freiburg",
-    "neuchâtel", "neuenburg",
-    "schaffhausen", "schaffhouse",
+    "glarus",
+    "thurgau",
+    "aargau",
+    "solothurn",
+    "freiburg", "fribourg",
+    "neuenburg", "neuchâtel",
+    "schaffhausen",
     "schwyz",
     "obwalden", "nidwalden",
     "uri",
     "zug",
     "jura",
-    "vaud", "waadt",
-    "st. gallen", "st gallen", "saint-gall",
-    # Geographische Begriffe CH-spezifisch
-    "municipality in", "commune in", "gemeinde",
-    "swiss alps", "bernese alps", "pennine alps", "lepontine alps",
-    "rhaetian alps", "glarus alps", "urner alps",
-    "alpine", "alpine pass",
-    "rhine", "rhône", "aare", "limmat", "reuss", "inn", "ticino river",
-    "lake geneva", "lake zurich", "lake constance", "lake lucerne",
-    "lake maggiore", "lake lugano",
+    "waadt", "vaud",
+    "st. gallen", "saint-gall",
+    # Geographische Begriffe — DE
+    "politische gemeinde", "gemeinde",
+    "bezirk",
+    "schweizer alpen", "berner alpen", "walliser alpen", "bündner alpen",
+    "alpenpass",
+    "rhein", "rhône", "aare", "limmat", "reuss",
     "bodensee", "vierwaldstättersee", "zürichsee", "genfersee",
-    # Regionen
-    "mittelland", "emmental", "bernese oberland", "engadin", "engadine",
-    "prättigau", "surselva", "leventina", "maggia",
+    "lago maggiore", "lago di lugano",   # IT-Namen auch im DE-Artikel
+    # Regionen — DE
+    "mittelland", "emmental", "berner oberland",
+    "engadin", "prättigau", "surselva", "leventina", "maggia",
+    "sottoceneri", "sopraceneri",
+    # Qualitätssicherung: verhindert False Positives
+    "ü. m.",       # "Meter über Meer" — in fast jedem CH-Bergartikel
+    "sac",         # Schweizer Alpen-Club
 }
-
 
 # ---------------------------------------------------------------------------
 # Global Token Bucket
@@ -159,11 +162,11 @@ def _get(url: str, params: dict | None = None, retries: int = 3) -> dict | None:
     return None
 
 
-def _search_candidates(name: str, country: str = "Switzerland") -> list[str]:
+def _search_candidates(name: str) -> list[str]:
     params = {
         "action":   "query",
         "list":     "search",
-        "srsearch": f"{name} {country}",
+        "srsearch": f"{name} Schweiz",
         "srlimit":  5,
         "format":   "json",
     }
@@ -190,10 +193,9 @@ def _is_swiss_article(summary: str) -> bool:
 # Public fetch function
 # ---------------------------------------------------------------------------
 
-def fetch_summary(name: str, country: str = "Switzerland",
-                  n_sentences: int = 12) -> str | None:
+def fetch_summary(name: str, n_sentences: int = 12) -> str | None:
     """Fetch first n_sentences from the most relevant Swiss Wikipedia article."""
-    candidates = _search_candidates(name, country)
+    candidates = _search_candidates(name)
     if not candidates:
         return None
 
